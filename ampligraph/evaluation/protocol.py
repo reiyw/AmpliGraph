@@ -600,6 +600,9 @@ def evaluate_performance(
         logger.debug("Evaluating the performance of the embedding model.")
         if isinstance(X, np.ndarray):
             X_test = filter_unseen_entities(X, model, verbose=verbose, strict=strict)
+            X_test = filter_unseen_relations(
+                X_test, model, verbose=verbose, strict=strict
+            )
 
             dataset_handle = NumpyDatasetAdapter()
             dataset_handle.use_mappings(model.rel_to_idx, model.ent_to_idx)
@@ -667,6 +670,54 @@ def evaluate_performance(
         if dataset_handle is not None:
             dataset_handle.cleanup()
         raise e
+
+
+def filter_unseen_relations(X, model, verbose=False, strict=True):
+    """Filter unseen relations in the test set.
+
+    Parameters
+    ----------
+    X : ndarray, shape [n, 3]
+        An array of test triples.
+    model : ampligraph.latent_features.EmbeddingModel
+        A knowledge graph embedding model.
+    verbose : bool
+        Verbose mode.
+    strict : bool
+        Strict mode. If True then any unseen relation will cause a RuntimeError.
+        If False then triples containing unseen relations will be filtered out.
+
+    Returns
+    -------
+    filtered X : ndarray, shape [n, 3]
+        An array of test triples containing no unseen relations.
+    """
+
+    logger.debug("Finding relations in test set that are not previously seen by model")
+    rel_seen = np.unique(list(model.rel_to_idx.keys()))
+    rel_test = np.unique(X[:, 1].ravel())
+    rel_unseen = np.setdiff1d(rel_test, rel_seen, assume_unique=True)
+
+    if rel_unseen.size == 0:
+        logger.debug("No unseen relations found.")
+        return X
+    else:
+        logger.debug("Unseen relations found.")
+        if strict:
+            msg = "Unseen relations found in test set, please remove or run evaluate_performance() with strict=False."
+            logger.error(msg)
+            raise RuntimeError(msg)
+        else:
+            # Get row-wise mask of triples containing unseen relations
+            mask_unseen = np.isin(X, rel_unseen).any(axis=1)
+
+            msg = "Removing {} triples containing unseen relations. ".format(
+                np.sum(mask_unseen)
+            )
+            if verbose:
+                logger.debug(msg)
+            logger.debug(msg)
+            return X[~mask_unseen]
 
 
 def filter_unseen_entities(X, model, verbose=False, strict=True):
