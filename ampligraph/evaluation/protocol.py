@@ -92,9 +92,9 @@ def train_test_split_no_unseen(X, test_size=100, seed=0, allow_duplication=False
         ['a', 'y', 'd']], dtype='<U1')
     """
 
-    logger.debug('Creating train test split.')
+    logger.debug("Creating train test split.")
     if type(test_size) is float:
-        logger.debug('Test size is of type float. Converting to int.')
+        logger.debug("Test size is of type float. Converting to int.")
         test_size = int(len(X) * test_size)
 
     rnd = np.random.RandomState(seed)
@@ -107,7 +107,7 @@ def train_test_split_no_unseen(X, test_size=100, seed=0, allow_duplication=False
     dict_rels = dict(zip(rels, rels_cnt))
 
     idx_test = np.array([], dtype=int)
-    logger.debug('Selecting test cases using random search.')
+    logger.debug("Selecting test cases using random search.")
 
     loop_count = 0
     tolerance = len(X) * 10
@@ -127,20 +127,24 @@ def train_test_split_no_unseen(X, test_size=100, seed=0, allow_duplication=False
         # in case can't find solution
         if loop_count == tolerance:
             if allow_duplication:
-                raise Exception("Cannot create a test split of the desired size. "
-                                "Some entities will not occur in both training and test set. "
-                                "Change seed values, or set test_size to a smaller value.")
+                raise Exception(
+                    "Cannot create a test split of the desired size. "
+                    "Some entities will not occur in both training and test set. "
+                    "Change seed values, or set test_size to a smaller value."
+                )
             else:
-                raise Exception("Cannot create a test split of the desired size. "
-                                "Some entities will not occur in both training and test set. "
-                                "Set allow_duplication=True, or "
-                                "change seed values, or set test_size to a smaller value.")
+                raise Exception(
+                    "Cannot create a test split of the desired size. "
+                    "Some entities will not occur in both training and test set. "
+                    "Set allow_duplication=True, or "
+                    "change seed values, or set test_size to a smaller value."
+                )
 
-    logger.debug('Completed random search.')
+    logger.debug("Completed random search.")
 
     idx = np.arange(len(X))
     idx_train = np.setdiff1d(idx, idx_test)
-    logger.debug('Train test split completed.')
+    logger.debug("Train test split completed.")
 
     return X[idx_train, :], X[idx_test, :]
 
@@ -173,13 +177,13 @@ def create_mappings(X):
         The entity-to-internal-id associations.
 
     """
-    logger.debug('Creating mappings for entities and relations.')
+    logger.debug("Creating mappings for entities and relations.")
     unique_ent = np.unique(np.concatenate((X[:, 0], X[:, 2])))
     unique_rel = np.unique(X[:, 1])
     return _create_unique_mappings(unique_ent, unique_rel)
 
 
-def generate_corruptions_for_eval(X, entities_for_corruption, corrupt_side='s+o'):
+def generate_corruptions_for_eval(X, entities_for_corruption, corrupt_side="s+o"):
     """Generate corruptions for evaluation.
 
         Create corruptions (subject and object) for a given triple x, in compliance with the
@@ -205,47 +209,57 @@ def generate_corruptions_for_eval(X, entities_for_corruption, corrupt_side='s+o'
         
     """
 
-    logger.debug('Generating corruptions for evaluation.')
+    logger.debug("Generating corruptions for evaluation.")
 
-    logger.debug('Getting repeating subjects.')
-    if corrupt_side not in ['s+o', 's', 'o']:
-        msg = 'Invalid argument value for corruption side passed for evaluation'
+    logger.debug("Getting repeating subjects.")
+    if corrupt_side not in ["s+o", "s", "o"]:
+        msg = "Invalid argument value for corruption side passed for evaluation"
         logger.error(msg)
         raise ValueError(msg)
 
-    if corrupt_side in ['s+o', 'o']:  # object is corrupted - so we need subjects as it is
+    if corrupt_side in [
+        "s+o",
+        "o",
+    ]:  # object is corrupted - so we need subjects as it is
         repeated_subjs = tf.keras.backend.repeat(
-            tf.slice(X,
-                     [0, 0],  # subj
-                     [tf.shape(X)[0], 1]),
-            tf.shape(entities_for_corruption)[0])
+            tf.slice(X, [0, 0], [tf.shape(X)[0], 1]),  # subj
+            tf.shape(entities_for_corruption)[0],
+        )
         repeated_subjs = tf.squeeze(repeated_subjs, 2)
 
-    logger.debug('Getting repeating object.')
-    if corrupt_side in ['s+o', 's']:  # subject is corrupted - so we need objects as it is
+    logger.debug("Getting repeating object.")
+    if corrupt_side in [
+        "s+o",
+        "s",
+    ]:  # subject is corrupted - so we need objects as it is
         repeated_objs = tf.keras.backend.repeat(
-            tf.slice(X,
-                     [0, 2],  # Obj
-                     [tf.shape(X)[0], 1]),
-            tf.shape(entities_for_corruption)[0])
+            tf.slice(X, [0, 2], [tf.shape(X)[0], 1]),  # Obj
+            tf.shape(entities_for_corruption)[0],
+        )
         repeated_objs = tf.squeeze(repeated_objs, 2)
 
-    logger.debug('Getting repeating relationships.')
+    logger.debug("Getting repeating relationships.")
     repeated_relns = tf.keras.backend.repeat(
-        tf.slice(X,
-                 [0, 1],  # reln
-                 [tf.shape(X)[0], 1]),
-        tf.shape(entities_for_corruption)[0])
+        tf.slice(X, [0, 1], [tf.shape(X)[0], 1]),  # reln
+        tf.shape(entities_for_corruption)[0],
+    )
     repeated_relns = tf.squeeze(repeated_relns, 2)
 
-    rep_ent = tf.keras.backend.repeat(tf.expand_dims(entities_for_corruption, 0), tf.shape(X)[0])
+    rep_ent = tf.keras.backend.repeat(
+        tf.expand_dims(entities_for_corruption, 0), tf.shape(X)[0]
+    )
     rep_ent = tf.squeeze(rep_ent, 0)
 
-    if corrupt_side == 's+o':
-        stacked_out = tf.concat([tf.stack([repeated_subjs, repeated_relns, rep_ent], 1),
-                                 tf.stack([rep_ent, repeated_relns, repeated_objs], 1)], 0)
+    if corrupt_side == "s+o":
+        stacked_out = tf.concat(
+            [
+                tf.stack([repeated_subjs, repeated_relns, rep_ent], 1),
+                tf.stack([rep_ent, repeated_relns, repeated_objs], 1),
+            ],
+            0,
+        )
 
-    elif corrupt_side == 'o':
+    elif corrupt_side == "o":
         stacked_out = tf.stack([repeated_subjs, repeated_relns, rep_ent], 1)
 
     else:
@@ -256,7 +270,9 @@ def generate_corruptions_for_eval(X, entities_for_corruption, corrupt_side='s+o'
     return out
 
 
-def generate_corruptions_for_fit(X, entities_list=None, eta=1, corrupt_side='s+o', entities_size=0, rnd=None):
+def generate_corruptions_for_fit(
+    X, entities_list=None, eta=1, corrupt_side="s+o", entities_size=0, rnd=None
+):
     """Generate corruptions for training.
 
     Creates corrupted triples for each statement in an array of statements,
@@ -315,63 +331,89 @@ def generate_corruptions_for_fit(X, entities_list=None, eta=1, corrupt_side='s+o
         indexes can be found at [index+i*n for i in range(eta)]
 
     """
-    logger.debug('Generating corruptions for fit.')
-    if corrupt_side not in ['s+o', 's', 'o']:
-        msg = 'Invalid argument value {} for corruption side passed for evaluation.'.format(corrupt_side)
+    logger.debug("Generating corruptions for fit.")
+    if corrupt_side not in ["s+o", "s", "o"]:
+        msg = "Invalid argument value {} for corruption side passed for evaluation.".format(
+            corrupt_side
+        )
         logger.error(msg)
         raise ValueError(msg)
 
     dataset = tf.reshape(tf.tile(tf.reshape(X, [-1]), [eta]), [tf.shape(X)[0] * eta, 3])
 
-    if corrupt_side == 's+o':
-        keep_subj_mask = tf.tile(tf.cast(tf.random_uniform([tf.shape(X)[0]], 0, 2, dtype=tf.int32, seed=rnd), tf.bool),
-                                 [eta])
+    if corrupt_side == "s+o":
+        keep_subj_mask = tf.tile(
+            tf.cast(
+                tf.random_uniform([tf.shape(X)[0]], 0, 2, dtype=tf.int32, seed=rnd),
+                tf.bool,
+            ),
+            [eta],
+        )
     else:
         keep_subj_mask = tf.cast(tf.ones(tf.shape(X)[0] * eta, tf.int32), tf.bool)
-        if corrupt_side == 's':
+        if corrupt_side == "s":
             keep_subj_mask = tf.logical_not(keep_subj_mask)
 
     keep_obj_mask = tf.logical_not(keep_subj_mask)
     keep_subj_mask = tf.cast(keep_subj_mask, tf.int32)
     keep_obj_mask = tf.cast(keep_obj_mask, tf.int32)
 
-    logger.debug('Created corruption masks.')
+    logger.debug("Created corruption masks.")
 
     if entities_size != 0:
-        replacements = tf.random_uniform([tf.shape(dataset)[0]], 0, entities_size, dtype=tf.int32, seed=rnd)
+        replacements = tf.random_uniform(
+            [tf.shape(dataset)[0]], 0, entities_size, dtype=tf.int32, seed=rnd
+        )
     else:
         if entities_list is None:
             # use entities in the batch
-            entities_list, _ = tf.unique(tf.squeeze(
-                tf.concat([tf.slice(X, [0, 0], [tf.shape(X)[0], 1]),
-                           tf.slice(X, [0, 2], [tf.shape(X)[0], 1])],
-                          0)))
+            entities_list, _ = tf.unique(
+                tf.squeeze(
+                    tf.concat(
+                        [
+                            tf.slice(X, [0, 0], [tf.shape(X)[0], 1]),
+                            tf.slice(X, [0, 2], [tf.shape(X)[0], 1]),
+                        ],
+                        0,
+                    )
+                )
+            )
 
-        random_indices = tf.squeeze(tf.multinomial(tf.expand_dims(tf.zeros(tf.shape(entities_list)[0]), 0),
-                                                   num_samples=tf.shape(dataset)[0],
-                                                   seed=rnd))
+        random_indices = tf.squeeze(
+            tf.multinomial(
+                tf.expand_dims(tf.zeros(tf.shape(entities_list)[0]), 0),
+                num_samples=tf.shape(dataset)[0],
+                seed=rnd,
+            )
+        )
 
         replacements = tf.gather(entities_list, random_indices)
 
-    subjects = tf.math.add(tf.math.multiply(keep_subj_mask, dataset[:, 0]),
-                           tf.math.multiply(keep_obj_mask, replacements))
-    logger.debug('Created corrupted subjects.')
+    subjects = tf.math.add(
+        tf.math.multiply(keep_subj_mask, dataset[:, 0]),
+        tf.math.multiply(keep_obj_mask, replacements),
+    )
+    logger.debug("Created corrupted subjects.")
     relationships = dataset[:, 1]
-    logger.debug('Retained relationships.')
-    objects = tf.math.add(tf.math.multiply(keep_obj_mask, dataset[:, 2]),
-                          tf.math.multiply(keep_subj_mask, replacements))
-    logger.debug('Created corrupted objects.')
+    logger.debug("Retained relationships.")
+    objects = tf.math.add(
+        tf.math.multiply(keep_obj_mask, dataset[:, 2]),
+        tf.math.multiply(keep_subj_mask, replacements),
+    )
+    logger.debug("Created corrupted objects.")
 
     out = tf.transpose(tf.stack([subjects, relationships, objects]))
 
-    logger.debug('Returning corruptions for fit.')
+    logger.debug("Returning corruptions for fit.")
     return out
 
 
 def _convert_to_idx(X, ent_to_idx, rel_to_idx, obj_to_idx):
-    unseen_msg = 'Input triples include one or more entities not present in the training set. ' \
-                 'Please filter X using evaluation.filter_unseen_entities(), or retrain the model on a training set ' \
-                 'that includes all the desired distinct entities.'
+    unseen_msg = (
+        "Input triples include one or more entities not present in the training set. "
+        "Please filter X using evaluation.filter_unseen_entities(), or retrain the model on a training set "
+        "that includes all the desired distinct entities."
+    )
 
     try:
         x_idx_s = np.vectorize(ent_to_idx.get)(X[:, 0])
@@ -386,9 +428,11 @@ def _convert_to_idx(X, ent_to_idx, rel_to_idx, obj_to_idx):
         raise ValueError(unseen_msg)
 
     if None in x_idx_p:
-        msg = 'Input triples include one or more relation type not present in the training set. ' \
-              'Please filter all relation in X that do not occur in the training test. ' \
-              'or retrain the model on a training set that includes all the desired relation types.'
+        msg = (
+            "Input triples include one or more relation type not present in the training set. "
+            "Please filter all relation in X that do not occur in the training test. "
+            "or retrain the model on a training set that includes all the desired relation types."
+        )
         logger.error(msg)
         raise ValueError(msg)
 
@@ -411,14 +455,22 @@ def to_idx(X, ent_to_idx, rel_to_idx):
     X : ndarray, shape [n, 3]
         The ndarray of converted statements.
     """
-    logger.debug('Converting statements to integer ids.')
+    logger.debug("Converting statements to integer ids.")
     if X.ndim == 1:
         X = X[np.newaxis, :]
     return _convert_to_idx(X, ent_to_idx, rel_to_idx, ent_to_idx)
 
 
-def evaluate_performance(X, model, filter_triples=None, verbose=False, strict=True, entities_subset=None,
-                         corrupt_side='s+o', use_default_protocol=True):
+def evaluate_performance(
+    X,
+    model,
+    filter_triples=None,
+    verbose=False,
+    strict=True,
+    entities_subset=None,
+    corrupt_side="s+o",
+    use_default_protocol=True,
+):
     """Evaluate the performance of an embedding model.
 
     The evaluation protocol follows the procedure defined in :cite:`bordes2013translating` and can be summarised as:
@@ -545,7 +597,7 @@ def evaluate_performance(X, model, filter_triples=None, verbose=False, strict=Tr
     dataset_handle = None
     # try-except block is mainly to handle clean up in case of exception or manual stop in jupyter notebook
     try:
-        logger.debug('Evaluating the performance of the embedding model.')
+        logger.debug("Evaluating the performance of the embedding model.")
         if isinstance(X, np.ndarray):
             X_test = filter_unseen_entities(X, model, verbose=verbose, strict=strict)
 
@@ -561,41 +613,53 @@ def evaluate_performance(X, model, filter_triples=None, verbose=False, strict=Tr
 
         if filter_triples is not None:
             if isinstance(filter_triples, np.ndarray):
-                logger.debug('Getting filtered triples.')
-                filter_triples = filter_unseen_entities(filter_triples, model, verbose=verbose, strict=strict)
+                logger.debug("Getting filtered triples.")
+                filter_triples = filter_unseen_entities(
+                    filter_triples, model, verbose=verbose, strict=strict
+                )
                 dataset_handle.set_filter(filter_triples)
                 model.set_filter_for_eval()
             elif isinstance(X, AmpligraphDatasetAdapter):
                 if not isinstance(filter_triples, bool):
-                    raise Exception('Expected a boolean type')
+                    raise Exception("Expected a boolean type")
                 if filter_triples is True:
                     model.set_filter_for_eval()
             else:
-                raise Exception('Invalid datatype for filter. Expected a numpy array or preset data in the adapter.')
+                raise Exception(
+                    "Invalid datatype for filter. Expected a numpy array or preset data in the adapter."
+                )
 
-        eval_dict = {'default_protocol': False}
+        eval_dict = {"default_protocol": False}
 
         if use_default_protocol:
-            corrupt_side = 's+o'
-            eval_dict['default_protocol'] = True
+            corrupt_side = "s+o"
+            eval_dict["default_protocol"] = True
 
         if entities_subset is not None:
-            idx_entities = np.asarray([idx for uri, idx in model.ent_to_idx.items() if uri in entities_subset])
-            eval_dict['corruption_entities'] = idx_entities
+            idx_entities = np.asarray(
+                [idx for uri, idx in model.ent_to_idx.items() if uri in entities_subset]
+            )
+            eval_dict["corruption_entities"] = idx_entities
 
-        logger.debug('Evaluating the test set by corrupting side : {}'.format(corrupt_side))
-        eval_dict['corrupt_side'] = corrupt_side
+        logger.debug(
+            "Evaluating the test set by corrupting side : {}".format(corrupt_side)
+        )
+        eval_dict["corrupt_side"] = corrupt_side
 
-        logger.debug('Configuring evaluation protocol.')
+        logger.debug("Configuring evaluation protocol.")
         model.configure_evaluation_protocol(eval_dict)
-        logger.debug('Making predictions.')
+        logger.debug("Making predictions.")
 
         ranks = model.get_ranks(dataset_handle)
 
         model.end_evaluation()
-        logger.debug('Ending Evaluation')
+        logger.debug("Ending Evaluation")
 
-        logger.debug('Returning ranks of positive test triples obtained by corrupting {}.'.format(corrupt_side))
+        logger.debug(
+            "Returning ranks of positive test triples obtained by corrupting {}.".format(
+                corrupt_side
+            )
+        )
         return np.array(ranks)
 
     except BaseException as e:
@@ -626,18 +690,18 @@ def filter_unseen_entities(X, model, verbose=False, strict=True):
         An array of test triples containing no unseen entities.
     """
 
-    logger.debug('Finding entities in test set that are not previously seen by model')
+    logger.debug("Finding entities in test set that are not previously seen by model")
     ent_seen = np.unique(list(model.ent_to_idx.keys()))
-    df = pd.DataFrame(X, columns=['s', 'p', 'o'])
+    df = pd.DataFrame(X, columns=["s", "p", "o"])
     filtered_df = df[df.s.isin(ent_seen) & df.o.isin(ent_seen)]
     n_removed_ents = df.shape[0] - filtered_df.shape[0]
 
     if strict and n_removed_ents > 0:
-        msg = 'Unseen entities found in test set, please remove or run evaluate_performance() with strict=False.'
+        msg = "Unseen entities found in test set, please remove or run evaluate_performance() with strict=False."
         logger.error(msg)
         raise RuntimeError(msg)
     else:
-        msg = 'Removing {} triples containing unseen entities. '.format(n_removed_ents)
+        msg = "Removing {} triples containing unseen entities. ".format(n_removed_ents)
         if verbose:
             logger.info(msg)
         logger.debug(msg)
@@ -660,15 +724,23 @@ def _remove_unused_params(params):
     params: dict
         Param dict without unused parameters.
     """
-    from ..latent_features import LOSS_REGISTRY, REGULARIZER_REGISTRY, MODEL_REGISTRY, \
-        OPTIMIZER_REGISTRY, INITIALIZER_REGISTRY
+    from ..latent_features import (
+        LOSS_REGISTRY,
+        REGULARIZER_REGISTRY,
+        MODEL_REGISTRY,
+        OPTIMIZER_REGISTRY,
+        INITIALIZER_REGISTRY,
+    )
 
     def _param_without_unused(param, registry, category_type, category_type_params):
         """Remove one particular nested param (if unused) given a registry"""
         if category_type_params in param and category_type in registry:
             expected_params = registry[category_type].external_params
-            params[category_type_params] = {k: v for k, v in param[category_type_params].items() if
-                                            k in expected_params}
+            params[category_type_params] = {
+                k: v
+                for k, v in param[category_type_params].items()
+                if k in expected_params
+            }
         else:
             params[category_type_params] = {}
 
@@ -677,13 +749,21 @@ def _remove_unused_params(params):
     if "loss" in params and "loss_params" in params:
         _param_without_unused(params, LOSS_REGISTRY, params["loss"], "loss_params")
     if "regularizer" in params and "regularizer_params" in params:
-        _param_without_unused(params, REGULARIZER_REGISTRY, params["regularizer"], "regularizer_params")
+        _param_without_unused(
+            params, REGULARIZER_REGISTRY, params["regularizer"], "regularizer_params"
+        )
     if "optimizer" in params and "optimizer_params" in params:
-        _param_without_unused(params, OPTIMIZER_REGISTRY, params["optimizer"], "optimizer_params")
+        _param_without_unused(
+            params, OPTIMIZER_REGISTRY, params["optimizer"], "optimizer_params"
+        )
     if "initializer" in params and "initializer_params" in params:
-        _param_without_unused(params, INITIALIZER_REGISTRY, params["initializer"], "initializer_params")
+        _param_without_unused(
+            params, INITIALIZER_REGISTRY, params["initializer"], "initializer_params"
+        )
     if "embedding_model_params" in params and "model_name" in params:
-        _param_without_unused(params, MODEL_REGISTRY, params["model_name"], "embedding_model_params")
+        _param_without_unused(
+            params, MODEL_REGISTRY, params["model_name"], "embedding_model_params"
+        )
 
     return params
 
@@ -696,9 +776,13 @@ def _flatten_nested_keys(dictionary):
     # Find the parameters that are nested dictionaries
     nested_keys = {k for k, v in dictionary.items() if type(v) is dict}
     # Flatten them into tuples
-    flattened_nested_keys = {(nk, k): dictionary[nk][k] for nk in nested_keys for k in dictionary[nk]}
+    flattened_nested_keys = {
+        (nk, k): dictionary[nk][k] for nk in nested_keys for k in dictionary[nk]
+    }
     # Get original dictionary without the nested keys
-    dictionary_without_nested_keys = {k: v for k, v in dictionary.items() if k not in nested_keys}
+    dictionary_without_nested_keys = {
+        k: v for k, v in dictionary.items() if k not in nested_keys
+    }
     # Return merged dicts
     return {**dictionary_without_nested_keys, **flattened_nested_keys}
 
@@ -711,9 +795,13 @@ def _unflatten_nested_keys(dictionary):
     # Find the parameters that are nested dictionaries
     nested_keys = {k[0] for k in dictionary if type(k) is tuple}
     # Select the parameters which were originally nested and unflatten them
-    nested_dict = {nk: {k[1]: v for k, v in dictionary.items() if k[0] == nk} for nk in nested_keys}
+    nested_dict = {
+        nk: {k[1]: v for k, v in dictionary.items() if k[0] == nk} for nk in nested_keys
+    }
     # Get original dictionary without the nested keys
-    dictionary_without_nested_keys = {k: v for k, v in dictionary.items() if type(k) is not tuple}
+    dictionary_without_nested_keys = {
+        k: v for k, v in dictionary.items() if type(k) is not tuple
+    }
     # Return merged dicts
     return {**dictionary_without_nested_keys, **nested_dict}
 
@@ -739,7 +827,9 @@ def _get_param_hash(param):
     """
     # Remove parameters that are not used by particular configurations
     # For example, if the regularization is None, there is no need for the regularization lambda
-    flattened_params = _flatten_nested_keys(_remove_unused_params(_unflatten_nested_keys(param)))
+    flattened_params = _flatten_nested_keys(
+        _remove_unused_params(_unflatten_nested_keys(param))
+    )
     return hash(frozenset(flattened_params.items()))
 
 
@@ -748,6 +838,7 @@ class ParamHistory(object):
     Used to evaluates whether a particular parameter configuration has already been previously seen or not.
     To achieve that, we hash each parameter configuration, removing unused parameters first.
     """
+
     def __init__(self):
         """The param history is a set of hashes."""
         self.param_hash_history = set()
@@ -879,10 +970,24 @@ def _scalars_into_lists(param_grid):
             _scalars_into_lists(v)
 
 
-def select_best_model_ranking(model_class, X_train, X_valid, X_test, param_grid, max_combinations=None,
-                              param_grid_random_seed=0, use_filter=True, early_stopping=False,
-                              early_stopping_params=None, use_test_for_selection=False, entities_subset=None,
-                              corrupt_side='s+o', use_default_protocol=True, retrain_best_model=False, verbose=False):
+def select_best_model_ranking(
+    model_class,
+    X_train,
+    X_valid,
+    X_test,
+    param_grid,
+    max_combinations=None,
+    param_grid_random_seed=0,
+    use_filter=True,
+    early_stopping=False,
+    early_stopping_params=None,
+    use_test_for_selection=False,
+    entities_subset=None,
+    corrupt_side="s+o",
+    use_default_protocol=True,
+    retrain_best_model=False,
+    verbose=False,
+):
     """Model selection routine for embedding models via either grid search or random search.
     
     For grid search, pass a fixed ``param_grid`` and leave ``max_combinations`` as `None`
@@ -1066,23 +1171,31 @@ def select_best_model_ranking(model_class, X_train, X_valid, X_test, param_grid,
     >>>                           early_stopping=True)
 
     """
-    logger.debug('Starting gridsearch over hyperparameters. {}'.format(param_grid))
+    logger.debug("Starting gridsearch over hyperparameters. {}".format(param_grid))
 
     if early_stopping_params is None:
         early_stopping_params = {}
 
     # Verify missing parameters for the model class (default values will be used)
-    undeclared_args = set(model_class.__init__.__code__.co_varnames[1:]) - set(param_grid.keys())
+    undeclared_args = set(model_class.__init__.__code__.co_varnames[1:]) - set(
+        param_grid.keys()
+    )
     if len(undeclared_args) != 0:
-        logger.debug("The following arguments were not defined in the parameter grid"
-                     " and thus the default values will be used: {}".format(', '.join(undeclared_args)))
+        logger.debug(
+            "The following arguments were not defined in the parameter grid"
+            " and thus the default values will be used: {}".format(
+                ", ".join(undeclared_args)
+            )
+        )
 
     param_grid["model_name"] = model_class.name
     _scalars_into_lists(param_grid)
 
     if max_combinations is not None:
         np.random.seed(param_grid_random_seed)
-        model_params_combinations = islice(_next_hyperparam_random(param_grid), max_combinations)
+        model_params_combinations = islice(
+            _next_hyperparam_random(param_grid), max_combinations
+        )
     else:
         model_params_combinations = _next_hyperparam(param_grid)
 
@@ -1092,10 +1205,14 @@ def select_best_model_ranking(model_class, X_train, X_valid, X_test, param_grid,
 
     if early_stopping:
         try:
-            early_stopping_params['x_valid']
+            early_stopping_params["x_valid"]
         except KeyError:
-            logger.debug('Early stopping enable but no x_valid parameter set. Setting x_valid to {}'.format(X_valid))
-            early_stopping_params['x_valid'] = X_valid
+            logger.debug(
+                "Early stopping enable but no x_valid parameter set. Setting x_valid to {}".format(
+                    X_valid
+                )
+            )
+            early_stopping_params["x_valid"] = X_valid
 
     if use_filter:
         X_filter = np.concatenate((X_train, X_valid, X_test))
@@ -1117,20 +1234,26 @@ def select_best_model_ranking(model_class, X_train, X_valid, X_test, param_grid,
         hits_10 = hits_at_n_score(ranks, n=10)
         return mrr, mr, hits_1, hits_3, hits_10
 
-    for model_params in tqdm(model_params_combinations, total=max_combinations, disable=(not verbose)):
+    for model_params in tqdm(
+        model_params_combinations, total=max_combinations, disable=(not verbose)
+    ):
         current_result = {
             "model_name": model_params["model_name"],
-            "model_params": model_params
+            "model_params": model_params,
         }
         del model_params["model_name"]
         try:
             model = model_class(**model_params)
             model.fit(X_train, early_stopping, early_stopping_params)
-            ranks = evaluate_performance(selection_dataset, model=model,
-                                         filter_triples=X_filter, verbose=verbose,
-                                         entities_subset=entities_subset,
-                                         use_default_protocol=use_default_protocol,
-                                         corrupt_side=corrupt_side)
+            ranks = evaluate_performance(
+                selection_dataset,
+                model=model,
+                filter_triples=X_filter,
+                verbose=verbose,
+                entities_subset=entities_subset,
+                use_default_protocol=use_default_protocol,
+                corrupt_side=corrupt_side,
+            )
 
             curr_mrr, mr, hits_1, hits_3, hits_10 = evaluation(ranks)
 
@@ -1139,11 +1262,17 @@ def select_best_model_ranking(model_class, X_train, X_valid, X_test, param_grid,
                 "mr": mr,
                 "hits_1": hits_1,
                 "hits_3": hits_3,
-                "hits_10": hits_10
+                "hits_10": hits_10,
             }
 
-            info = 'mr: {} mrr: {} hits 1: {} hits 3: {} hits 10: {}, model: {}, params: {}'.format(
-                mr, curr_mrr, hits_1, hits_3, hits_10, type(model).__name__, model_params
+            info = "mr: {} mrr: {} hits 1: {} hits 3: {} hits 10: {}, model: {}, params: {}".format(
+                mr,
+                curr_mrr,
+                hits_1,
+                hits_3,
+                hits_10,
+                type(model).__name__,
+                model_params,
             )
 
             logger.debug(info)
@@ -1155,12 +1284,12 @@ def select_best_model_ranking(model_class, X_train, X_valid, X_test, param_grid,
                 best_model = model
                 best_params = model_params
         except Exception as e:
-            current_result["results"] = {
-                "exception": str(e)
-            }
+            current_result["results"] = {"exception": str(e)}
 
             if verbose:
-                logger.error('Exception occurred for parameters:{}'.format(model_params))
+                logger.error(
+                    "Exception occurred for parameters:{}".format(model_params)
+                )
                 logger.error(str(e))
             else:
                 pass
@@ -1168,20 +1297,35 @@ def select_best_model_ranking(model_class, X_train, X_valid, X_test, param_grid,
 
     if best_model is not None:
         if retrain_best_model:
-            best_model.fit(np.concatenate((X_train, X_valid)), early_stopping, early_stopping_params)
-
-        ranks_test = evaluate_performance(X_test, model=best_model,
-                                          filter_triples=X_filter, verbose=verbose,
-                                          entities_subset=entities_subset,
-                                          use_default_protocol=use_default_protocol,
-                                          corrupt_side=corrupt_side)
-
-        test_mrr, test_mr, test_hits_1, test_hits_3, test_hits_10 = evaluation(ranks_test)
-
-        info = \
-            'Best model test results: mr: {} mrr: {} hits 1: {} hits 3: {} hits 10: {}, model: {}, params: {}'.format(
-                test_mrr, test_mr, test_hits_1, test_hits_3, test_hits_10, type(best_model).__name__, best_params
+            best_model.fit(
+                np.concatenate((X_train, X_valid)),
+                early_stopping,
+                early_stopping_params,
             )
+
+        ranks_test = evaluate_performance(
+            X_test,
+            model=best_model,
+            filter_triples=X_filter,
+            verbose=verbose,
+            entities_subset=entities_subset,
+            use_default_protocol=use_default_protocol,
+            corrupt_side=corrupt_side,
+        )
+
+        test_mrr, test_mr, test_hits_1, test_hits_3, test_hits_10 = evaluation(
+            ranks_test
+        )
+
+        info = "Best model test results: mr: {} mrr: {} hits 1: {} hits 3: {} hits 10: {}, model: {}, params: {}".format(
+            test_mrr,
+            test_mr,
+            test_hits_1,
+            test_hits_3,
+            test_hits_10,
+            type(best_model).__name__,
+            best_params,
+        )
 
         logger.debug(info)
         if verbose:
@@ -1192,7 +1336,7 @@ def select_best_model_ranking(model_class, X_train, X_valid, X_test, param_grid,
             "mr": test_mr,
             "hits_1": test_hits_1,
             "hits_3": test_hits_3,
-            "hits_10": test_hits_10
+            "hits_10": test_hits_10,
         }
     else:
         ranks_test = []
@@ -1202,7 +1346,15 @@ def select_best_model_ranking(model_class, X_train, X_valid, X_test, param_grid,
             "mr": np.nan,
             "hits_1": np.nan,
             "hits_3": np.nan,
-            "hits_10": np.nan
+            "hits_10": np.nan,
         }
 
-    return best_model, best_params, best_mrr_train, ranks_test, test_evaluation, experimental_history
+    return (
+        best_model,
+        best_params,
+        best_mrr_train,
+        ranks_test,
+        test_evaluation,
+        experimental_history,
+    )
+
